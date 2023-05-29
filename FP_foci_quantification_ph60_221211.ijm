@@ -1,5 +1,5 @@
 // FP foci quantification
-// author: Masak Takaine
+// developed by Masak Takaine
 
 // This FIJI macro allows automatic detection and analysis of intracellular fluorescent foci in yeast cells.
 // "Foci" are defined as intracellular fluorescent structures that have stronger intensitie than fluorescent granules.
@@ -9,7 +9,7 @@
 // Cell outlines are extracted from phase-contrast images, fluorescent foci inside the cell boundary are detected using the FindMaxima function.
 // You can specify "prominence" (former "Noise Tolerance") of the FindMaxima function.
 
-macro "FP_foci_quantification" {
+macro "FP_foci_quantification_findmaxima" {
 
 #@ String(label="Date of experiments, e.g., 2022-02-05") edate1
 // Input a prominence(= noise tolerance) used in the FindMaxima function
@@ -33,7 +33,7 @@ pct_foci_cell = newArray; 	// An array to store the percent of cells having fluo
 prominence = newArray;
 defocus = newArray;  // An array to check images that are not suitable for analysis
 
-dirD = dirD1 +  "/"+ "prom_" + prom;
+dirD = dirD1 +  "/" + edate1 + "_prom_" + prom;
 File.makeDirectory(dirD);
 
 dirBF = dirD + "/BF/";				//Create a folder for phase-contrast or biright-field images
@@ -48,17 +48,8 @@ File.makeDirectory(dirMer);
 dirDR = dirD + "/Drawings/";				//Create a folder for mask images and ROI data
 File.makeDirectory(dirDR);			//
 
-dirCSV = dirD +"/" + edate1 + "_prom" + prom + "_csv/";
-File.makeDirectory(dirCSV);		// Create a folder for csv files
-
-for (i = 0; i < imagefilelist.length; i++) {
-  currFile = dirS + imagefilelist[i];
-    if((endsWith(currFile, ".nd2"))||(endsWith(currFile, ".oib"))||(endsWith(currFile, ".zvi"))) { // process if files ending with .oib or .nd2, or .zvi
-		run("Bio-Formats Macro Extensions"); 
-		Ext.openImagePlus(currFile)}
-	else if ((endsWith(currFile, ".tif"))||(endsWith(currFile, ".tiff"))) {// process if files ending with .tif or .tiff (hyperstack files)
-			open(currFile); 
-		}
+sno = 0; // A variable to count observation： Serial No. of observation, equals total number of rows in table "foci_data"
+snf = 0; // A variable to count the total number of fluorescent foci: Serial No. of Foci
 
 // Create arraies for table "foci_data"
 date = newArray;			//An array to store date of experiments
@@ -72,7 +63,15 @@ foci_y = newArray;			//An array to store the y coordinate of the granule
 cell_area = newArray;		//An array to store the area of cell
 prominences = newArray;		//An array to store the current prominence
 withfoci = newArray;		//An array to check existance of granule in the cell
-defocuses = newArray;  // An array to check cells that are not suitable for analysis
+
+for (i = 0; i < imagefilelist.length; i++) {
+  currFile = dirS + imagefilelist[i];
+    if((endsWith(currFile, ".nd2"))||(endsWith(currFile, ".oib"))||(endsWith(currFile, ".zvi"))) { // process if files ending with .oib or .nd2, or .zvi
+		run("Bio-Formats Macro Extensions"); 
+		Ext.openImagePlus(currFile)}
+	else if ((endsWith(currFile, ".tif"))||(endsWith(currFile, ".tiff"))) {// process if files ending with .tif or .tiff (hyperstack files)
+			open(currFile); 
+		}
 
 print("\\Clear"); 							
 title = getTitle();
@@ -105,8 +104,8 @@ run("Dilate");
 //run("Dilate");  //repeat if x100 phase-contrast image 
 
 run("Skeletonize");
-run("Analyze Skeleton (2D/3D)", "prune=[shortest branch] prune_0");
-run("Analyze Skeleton (2D/3D)", "prune=[shortest branch] prune_0");  // Repeat twice to ensure generation of a "Tagged skeleton" image
+run("Analyze Skeleton (2D/3D)", "prune=[shortest branch] prune_0"); // require Analyze skeleton plugin (https://imagej.net/plugins/analyze-skeleton/)
+//run("Analyze Skeleton (2D/3D)", "prune=[shortest branch] prune_0");  // Repeat twice to ensure generation of a "Tagged skeleton" image
 selectWindow("Tagged skeleton");
 run("Convert to Mask");
 rename("debranch_" + title2);
@@ -128,9 +127,7 @@ rename("segmented_" + title2);
 run("Set Measurements...", " area redirect=None decimal=3");
 run("Analyze Particles...", "size=400-3000 pixel show=Outlines display exclude clear add"); // size = 667-5000 for x100 phase-contrast image 
 
-sno = 0; // A variable to count observation： Serial No. of observation, equals total number of rows in table "foci_data"
 cwf = 0; // A variable to count the number of cells showing fluorescent foci: Cell With Foci
-snf = 0; // A variable to count the total number of fluorescent foci: Serial No. of Foci
 
 selectWindow(c1);							// Superimpose cell boundaries detected (ROIs) on a fluorescence image
 //run("Subtract Background...", "rolling=10");  // Important step to detect fine fluorescent condensates (granules) 
@@ -158,8 +155,9 @@ for(k=0; k<roiManager("count"); k++) {   // Activate and analyse a ROI one by on
 			obserbation[sno] = sno+1;
 			foci_serial[sno] = snf+1;					
 			cell_number[sno] = k+1;						
-			image_file[sno] = title_s;					
-			
+			image_file[sno] = title_s;	
+							
+			selectWindow("Results");					// Selection of the Results window prevents a error		
 			foci_x[sno] = getResult("X", l);			// The x coordinate of the snf-th granule
 			foci_y[sno] = getResult("Y", l);			// The y coordinate of the snf-th granule
 			cell_area[sno] = area;
@@ -225,23 +223,22 @@ for (m = 0; m < foci_x.length; m++) {
 }
 saveAs("Tiff", dirDR+getTitle());
 close();
-
-
-// Create a table summarizing data of individual granules
-Array.show("foci_data", date,image_file,cell_number, obserbation,withfoci, foci_serial, foci_meanint, foci_x, foci_y, cell_area, prominences, defocuses);
+run("Close All");
+}
+    // Create a table summarizing data of individual granules
+Array.show("foci_data", date,image_file,obserbation,cell_number,withfoci, foci_serial, foci_meanint, foci_x, foci_y, cell_area, prominences);
 selectWindow("foci_data");
-saveAs("Results", dirCSV + edate1 + "_"+ title_s + "_prom" + prom + ".csv"); 
+saveAs("Results", dirD +"/"+ edate1 + "_foci_data_prom" + prom + ".csv"); 
 run("Close");
 run("Close All");
 
-}
-    
 // Create a table summarizing data of individual image files
 Array.show("foci_stat(row numbers)", file_name, total_cell_number, foci_cell, pct_foci_cell, prominence, defocus);														
     selectWindow("foci_stat");
-    saveAs("Results", dirD +"/"+ edate1 + "_prom" + prom + "_foci_stat.csv"); 
+    saveAs("Results", dirD +"/"+ edate1 + "_foci_stat_prom" + prom + ".csv"); 
    
-	run("Close");	
+	run("Close");
+	run("Close All");	
     run("Clear Results");						// Reset Results window
 	print("\\Clear"); 							// Reset Log window
 	roiManager("reset");						// Reset ROI manager
