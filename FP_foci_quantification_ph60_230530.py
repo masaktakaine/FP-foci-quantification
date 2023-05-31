@@ -22,7 +22,7 @@ from ij.plugin import ChannelSplitter as CS
 from ij.plugin import RGBStackMerge, RGBStackConverter
 from ij.plugin import Duplicator
 from ij.plugin import ZProjector as ZP
-from ij.plugin.frame import RoiManager
+from ij.plugin.frame import RoiManager as RM
 from ij.plugin.filter import GaussianBlur
 from ij.plugin.filter import MaximumFinder
 from ij.plugin.filter import BackgroundSubtracter as BS
