@@ -15,26 +15,26 @@ from ij.process import ByteProcessor
 from ij.process import ImageStatistics as IS
 options = IS.MEAN | IS.AREA | IS.STD_DEV  # many others
 from ij.gui import Roi
-from ij.plugin.frame import RoiManager
+
 from ij.measure import ResultsTable
+from ij.plugin import ImageCalculator
 from ij.plugin import ChannelSplitter as CS
 from ij.plugin import RGBStackMerge, RGBStackConverter
 from ij.plugin import Duplicator
 from ij.plugin import ZProjector as ZP
+from ij.plugin.frame import RoiManager
 from ij.plugin.filter import GaussianBlur
+from ij.plugin.filter import MaximumFinder
 from ij.plugin.filter import BackgroundSubtracter as BS
-from ij.plugin.frame import RoiManager as RM
 createBackground = False
 lightBackground = False
 useParaboloid = False
 doPresmooth = False
 correctCorners = False
+
 import os
 from os import path
-from org.apache.commons.math3.stat.descriptive import DescriptiveStatistics as DSS
-from ij.plugin import ImageCalculator
 import random
-from ij.plugin.filter import MaximumFinder
 
 #@ String(label="Date of experiments, e.g., 2022-02-05") edate1
 #@ int(label="Prominence for FindMaxima") prom
@@ -266,7 +266,7 @@ save_result_table(str(dirD), edate1+"_foci_stat", foci_stat)
 foci_data = ResultsTable(sno) # Construct a table with "sno" rows
 
 # Extract each list from the dictionary, and add the values as a column in the table
-for k,v in params.items():
+for k, v in params.items():
 		for j in range(0, len(v)):
 			foci_data.setValue(str(k), j, v[j])
 		
@@ -284,6 +284,6 @@ save_result_table(str(dirD), edate1+"_foci_data", foci_data)
 
 print "Done. \n"
 IJ.run("Clear Results")
-rm = RoiManager.getRoiManager()
+rm = RM.getRoiManager()
 rm.reset()
 IJ.run("Close All")
