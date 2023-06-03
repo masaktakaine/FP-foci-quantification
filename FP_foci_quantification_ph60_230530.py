@@ -73,7 +73,7 @@ def save_image_as_tif(directory, filename, image):
     outputfile = os.path.join(directory, filename + ".tif")
     IJ.saveAs(image, "TIFF", outputfile) # 保存する画像、tiff形式、パスを指定
 
-def FP_foci_quantification_findmaxima(current_file_path):
+def FP_foci_quantification_findmaxima(current_file_path, prom):
 	global edate, sno, snf
 	imp0 = IJ.openImage(current_file_path)
 	width = imp0.getWidth()
@@ -122,7 +122,7 @@ def FP_foci_quantification_findmaxima(current_file_path):
 	cell_ol = ImageCalculator().run("Subtract create", ts2, ts)
 	#imp3.show()
 	IJ.run("Set Measurements...", "area redirect=None decimal=3")
-	IJ.run(cell_ol, "Analyze Particles...", "size=400-3000 pixel show=Outlines display exclude clear add")  # size unit is µm
+	IJ.run(cell_ol, "Analyze Particles...", "size=400-3000 pixel show=Outlines display exclude clear add")  # size unit is pixel
 	IJ.selectWindow("Drawing of Result of DUP_Tagged skeleton")
 	drawing = IJ.getImage()
 	drawing.hide()
@@ -208,7 +208,7 @@ def FP_foci_quantification_findmaxima(current_file_path):
 # Insert a blank to prevent automatic modification on Excel.
 edate = " "+edate1
 # Make directories
-dirD = os.path.join(str(dirD0), edate1 + "_output")
+dirD = os.path.join(str(dirD0), edate1 + "_prom" + str(prom) + "_output")
 if not os.path.exists(dirD):
 	os.mkdir(dirD)
 dirBF = os.path.join(str(dirD), "BF")
@@ -238,7 +238,7 @@ foci_stat = ResultsTable()
 
 for nd2_file in reversed(nd2_files):  # reversed() generates a revered iterator
     current_file_path = os.path.join(str(dirS0), nd2_file) 
-    results = FP_foci_quantification_findmaxima(str(current_file_path))
+    results = FP_foci_quantification_findmaxima(str(current_file_path), prom)
       
     params = results[4]
     params2 = results[5]
